@@ -2,12 +2,14 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>心情回报系统 - 老师后台</title>
+  <title id="title">心情回报系统 - 老师后台</title>
   <script>
     const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
     if (!currentUser || currentUser.role !== "teacher") {
       alert("请先登录老师账户！");
-      window.location.href = "login.html";
+      // *** 关键修改点 ***
+      // 登录页现在是 index.html
+      window.location.href = "index.html";
     }
   </script>
   <style>
@@ -36,347 +38,526 @@
       
       /* ✨ 毛玻璃效果 */
       background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      position: relative;
     }
 
-    h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
-    
-    /* 表格样式 */
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: rgba(255,255,255,0.6); border-radius: 8px; overflow: hidden; }
-    th, td { padding: 12px; border-bottom: 1px solid #ddd; text-align: center; }
-    th { background: #3498db; color: white; }
-    
-    .lang-switch { text-align: right; margin-bottom: 10px; }
-    .lang-switch button { margin-left: 5px; border: none; background: none; font-size: 14px; cursor: pointer; color: #3498db; font-weight: bold; }
-    
-    /* 筛选器样式 */
-    .filter-container { 
-        display: flex; flex-wrap: wrap; gap: 15px; padding: 20px; 
-        background-color: rgba(255,255,255,0.7); border-radius: 10px; margin-bottom: 20px; 
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #a18cd1;
+      padding-bottom: 10px;
     }
-    .filter-group { display: flex; flex-direction: column; flex-grow: 1; min-width: 200px; }
-    .filter-group label { font-size: 13px; font-weight: bold; color: #555; margin-bottom: 5px; }
-    .filter-group input, .filter-group select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-    
-    /* 按钮样式 */
-    .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-    .action-buttons button { padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; background-color: #2ecc71; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .action-buttons button.print-btn { background-color: #e67e22; }
-    .action-buttons button:hover { opacity: 0.9; transform: translateY(-1px); }
 
-    /* 登出按钮 */
+    .filter-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .filter-item {
+        flex: 1;
+    }
+
+    .filter-item label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    .filter-item input, .filter-item select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      background-color: white;
+    }
+
+    th, td {
+      border: 1px solid #eee;
+      padding: 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #a18cd1;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #f0f0f0;
+    }
+
+    .risk {
+        background-color: #ffdddd !important; /* 风险报告醒目颜色 */
+        font-weight: bold;
+        color: #e74c3c;
+    }
+
+    .risk:hover {
+        background-color: #ffcaca !important;
+    }
+
     #logoutBtnTop {
-        position: fixed; top: 15px; right: 15px;
-        padding: 8px 15px; background: rgba(255,255,255,0.8); color: #e74c3c;
-        border: 1px solid #e74c3c; border-radius: 5px; cursor: pointer; font-weight: bold;
-        z-index: 100;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: auto;
+        padding: 10px 20px;
+        background: #a6c1ee;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s;
     }
-    #logoutBtnTop:hover { background: #e74c3c; color: white; }
 
-    /* Dashboard 样式 */
-    .dashboard-container { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; margin-top: 10px; }
-    .stat-card { 
-        flex-grow: 1; min-width: 220px; background: rgba(255,255,255,0.9); 
-        padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    #logoutBtnTop:hover {
+        background: #96e6a1;
     }
-    .stat-card p { margin: 0 0 10px 0; color: #666; font-weight: bold; font-size: 14px; }
-    .stat-card h2 { margin: 0; color: #3498db; font-size: 2.5em; }
-    .stat-card h2.stat-alert { color: #e74c3c; }
-    .stat-card h2.stat-common { font-size: 1.5em; color: #34495e; }
 
-    /* 高风险行高亮样式 */
-    tr.ai-risk-high { background-color: rgba(252, 236, 235, 0.9) !important; } 
-    tr.ai-risk-high td { color: #c0392b; font-weight: bold; }
+    #exportBtn {
+        width: 100%;
+        padding: 12px;
+        background: #96e6a1;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s;
+        margin-top: 20px;
+    }
+
+    #exportBtn:hover {
+        background: #a6c1ee;
+    }
+
+    .lang-switcher {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+    }
+
+    .lang-switcher button {
+        width: auto;
+        padding: 8px 15px;
+        margin: 0 5px;
+        background-color: #eee;
+        color: #333;
+        font-size: 14px;
+        display: inline-block;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .lang-switcher button.active {
+        background-color: #a18cd1;
+        color: white;
+    }
+
+    .chart-container {
+        margin-top: 40px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <button onclick="logout()" id="logoutBtnTop">登出</button>
 
-  <div class="container">
-    <div class="lang-switch">
-      🌐 <button onclick="setLanguage('zh')">中文</button> | <button onclick="setLanguage('en')">English</button> | <button onclick="setLanguage('ms')">Bahasa</button>
-    </div>
-    <h1 id="title">👩‍🏫 老师后台 - 学生心情记录</h1>
+<button onclick="logout()" id="logoutBtnTop">登出</button>
 
-    <h2 id="dashboard_title" style="text-align: left; font-weight: 600; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">数据概览</h2>
-    <div class="dashboard-container">
-        <div class="stat-card"><p id="stat_today_label">今日提交</p><h2 id="stat_today_value">0</h2></div>
-        <div class="stat-card"><p id="stat_alerts_label">“高风险”报告 (全部)</p><h2 id="stat_alerts_value" class="stat-alert">0</h2></div>
-        <div class="stat-card"><p id="stat_common_label">最常见的困扰 (全部)</p><h2 id="stat_common_value" class="stat-common">--</h2></div>
-    </div>
+<script>
+    function logout() {
+        localStorage.removeItem("loggedInUser");
+        // *** 关键修改点 ***
+        // 登录页现在是 index.html
+        window.location.href = "index.html";
+    }
+</script>
 
-    <div class="filter-container">
-      <div class="filter-group"><label id="label_filter_name">按姓名/学号搜索：</label><input type="text" id="filterName" placeholder="输入姓名..."></div>
-      <div class="filter-group"><label id="label_filter_class">按班级搜索：</label><input type="text" id="filterClass" placeholder="输入班级..."></div>
-      <div class="filter-group"><label id="label_filter_mood">按心情筛选：</label><select id="filterMood"></select></div>
-    </div>
-    
-    <div class="action-buttons">
-      <button id="exportCsvBtn" onclick="exportToCsv()">导出为 CSV</button>
-      <button id="printBtn" onclick="printReport()" class="print-btn">打印报告</button>
-    </div>
+<div class="lang-switcher">
+    <button id="langZh" onclick="setLanguage('zh')">中文</button>
+    <button id="langEn" onclick="setLanguage('en')">English</button>
+</div>
 
-    <table id="dataTable">
-      <thead>
-        <tr>
-          <th id="th-date">日期</th>
-          <th id="th-name">姓名 / 学号</th>
-          <th id="th-class">班级</th>
-          <th id="th-mood">心情</th>
-          <th id="th-problem">主要困扰</th>
-          <th id="th-message">留言</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+<div class="container">
+  <h1 id="headerTitle">心情回报系统 - 老师后台</h1>
+
+  <div class="filter-group">
+      <div class="filter-item">
+          <label for="filterName" id="filterNameLabel">按姓名过滤</label>
+          <input type="text" id="filterName" placeholder="输入学生姓名">
+      </div>
+      <div class="filter-item">
+          <label for="filterClass" id="filterClassLabel">按班级/学号过滤</label>
+          <input type="text" id="filterClass" placeholder="输入班级或学号">
+      </div>
+      <div class="filter-item">
+          <label for="filterMood" id="filterMoodLabel">按心情过滤</label>
+          <select id="filterMood">
+              <option value="all" id="moodFilterAll">全部</option>
+              <option value="happy" id="moodFilterHappy">快乐 / Happy</option>
+              <option value="calm" id="moodFilterCalm">平静 / Calm</option>
+              <option value="bored" id="moodFilterBored">无聊 / Bored</option>
+              <option value="stressed" id="moodFilterStressed">压力大 / Stressed</option>
+              <option value="sad" id="moodFilterSad">难过 / Sad</option>
+              <option value="angry" id="moodFilterAngry">生气 / Angry</option>
+              <option value="anxious" id="moodFilterAnxious">焦虑 / Anxious</option>
+              <option value="hopeless" id="moodFilterHopeless">绝望 / Hopeless</option>
+          </select>
+      </div>
+      <div class="filter-item">
+          <label for="filterRisk" id="filterRiskLabel">风险等级</label>
+          <select id="filterRisk">
+              <option value="all" id="riskFilterAll">全部</option>
+              <option value="high" id="riskFilterHigh">高风险 (标红)</option>
+              <option value="normal" id="riskFilterNormal">正常</option>
+          </select>
+      </div>
   </div>
 
-  <script>
-    function logout() { localStorage.removeItem("loggedInUser"); window.location.href = "login.html"; }
+  <table id="reportsTable">
+      </table>
+  
+  <button id="exportBtn" onclick="exportData()" >导出数据为 Excel/CSV</button>
 
-    const translations = {
-      zh: {
-        title: "👩‍🏫 老师后台 - 学生心情记录",
-        th_date: "日期", th_name: "姓名 / 学号", th_class: "班级", th_mood: "心情", th_problem: "主要困扰", th_message: "留言", 
-        logout: "登出",
-        no_data: "没有找到匹配的数据",
-        filter_name: "按姓名/学号搜索：", filter_name_placeholder: "输入姓名...",
-        filter_class: "按班级搜索：", filter_class_placeholder: "输入班级...",
-        filter_mood: "按心情筛选：", filter_mood_all: "显示所有心情",
-        btn_export_csv: "导出为 CSV", btn_print: "打印报告",
-        report_title: "学生心情报告 (已筛选)",
-        dashboard_title: "数据概览", stat_today: "今日提交", stat_alerts: "“高风险”报告 (全部)", stat_common: "最常见的困扰 (全部)", stat_none: "暂无数据",
-        suffix_times: "次",
-        data_map: {"😊 开心": "😊 开心", "😐 普通": "😐 普通", "😔 难过": "😔 难过", "😡 生气": "😡 生气", "😰 焦虑": "😰 焦虑", "课业压力": "课业压力", "人际关系": "人际关系", "被霸凌": "被霸凌", "家庭问题": "家庭问题", "其他": "其他", "（无）": "（无）"}
-      },
-      en: {
-        title: "👩‍🏫 Teacher Dashboard - Student Mood Reports",
-        th_date: "Date", th_name: "Name / ID", th_class: "Class", th_mood: "Mood", th_problem: "Main Problem", th_message: "Message",
-        logout: "Logout",
-        no_data: "No matching data found",
-        filter_name: "Search by Name/ID:", filter_name_placeholder: "Enter name...",
-        filter_class: "Search by Class:", filter_class_placeholder: "Enter class...",
-        filter_mood: "Filter by Mood:", filter_mood_all: "Show All Moods",
-        btn_export_csv: "Export to CSV", btn_print: "Print Report",
-        report_title: "Student Mood Report (Filtered)",
-        dashboard_title: "Data Overview", stat_today: "Submissions Today", stat_alerts: "'High-Risk' Reports (Total)", stat_common: "Most Common Problem (Total)", stat_none: "No Data",
-        suffix_times: " times",
-        data_map: {"😊 开心": "😊 Happy", "😐 普通": "😐 Okay", "😔 难过": "😔 Sad", "😡 生气": "😡 Angry", "😰 焦虑": "😰 Anxious", "课业压力": "Academic stress", "人际关系": "Relationships", "被霸凌": "Bullying", "家庭问题": "Family issues", "其他": "Others", "（无）": "(None)"}
-      },
-      ms: {
-        title: "👩‍🏫 Laman Guru - Rekod Emosi Pelajar",
-        th_date: "Tarikh", th_name: "Nama / ID", th_class: "Kelas", th_mood: "Perasaan", th_problem: "Masalah Utama", th_message: "Mesej",
-        logout: "Log Keluar",
-        no_data: "Tiada data yang sepadan",
-        filter_name: "Cari ikut Nama/ID:", filter_name_placeholder: "Masukkan nama...",
-        filter_class: "Cari ikut Kelas:", filter_class_placeholder: "Masukkan kelas...",
-        filter_mood: "Tapis ikut Perasaan:", filter_mood_all: "Tunjuk Semua Perasaan",
-        btn_export_csv: "Eksport ke CSV", btn_print: "Cetak Laporan",
-        report_title: "Laporan Emosi Pelajar (Ditapis)",
-        dashboard_title: "Gambaran Keseluruhan Data", stat_today: "Penyerahan Hari Ini", stat_alerts: "Laporan 'Beresiko Tinggi' (Jumlah)", stat_common: "Masalah Paling Lazim (Jumlah)", stat_none: "Tiada Data",
-        suffix_times: " kali",
-        data_map: {"😊 开心": "😊 Gembira", "😐 普通": "😐 Biasa", "😔 难过": "😔 Sedih", "😡 生气": "😡 Marah", "😰 焦虑": "😰 Cemas", "课业压力": "Tekanan pelajaran", "人际关系": "Hubungan", "被霸凌": "Buli", "家庭问题": "Masalah keluarga", "其他": "Lain-lain", "（无）": "(Tiada)"}
-      }
+  <div class="chart-container">
+      <h2 id="moodChartTitle" style="text-align: center; color: #333;">心情统计图</h2>
+      <canvas id="moodChart"></canvas>
+  </div>
+</div>
+
+<script>
+    const langText = {
+        zh: {
+            title: "心情回报系统 - 老师后台",
+            headerTitle: "心情回报系统 - 老师后台",
+            logout: "登出",
+            filterNameLabel: "按姓名过滤",
+            filterClassLabel: "按班级/学号过滤",
+            filterMoodLabel: "按心情过滤",
+            filterRiskLabel: "风险等级",
+            moodFilterAll: "全部", moodFilterHappy: "快乐 / Happy", moodFilterCalm: "平静 / Calm", moodFilterBored: "无聊 / Bored", 
+            moodFilterStressed: "压力大 / Stressed", moodFilterSad: "难过 / Sad", moodFilterAngry: "生气 / Angry", moodFilterAnxious: "焦虑 / Anxious", moodFilterHopeless: "绝望 / Hopeless",
+            riskFilterAll: "全部", riskFilterHigh: "高风险 (标红)", riskFilterNormal: "正常",
+            th_date: "日期", th_name: "姓名", th_class: "班级/学号", th_mood: "心情", th_problem: "主要问题", th_message: "留言",
+            moodChartTitle: "心情统计图",
+            exportBtn: "导出数据为 Excel/CSV",
+            placeholderName: "输入学生姓名",
+            placeholderClass: "输入班级或学号",
+            noData: "没有报告数据。",
+            mood_happy: "快乐", mood_calm: "平静", mood_bored: "无聊", mood_stressed: "压力大", mood_sad: "难过", mood_angry: "生气", mood_anxious: "焦虑", mood_hopeless: "绝望",
+            problem_study: "学习压力", problem_family: "家庭关系", problem_relationship: "人际关系", problem_physical: "身体不适", problem_sleep: "睡眠问题", problem_career: "未来规划", problem_other: "其他",
+            no_message: "（无）"
+        },
+        en: {
+            title: "Mood Report System - Teacher Backend",
+            headerTitle: "Mood Report System - Teacher Backend",
+            logout: "Logout",
+            filterNameLabel: "Filter by Name",
+            filterClassLabel: "Filter by Class/ID",
+            filterMoodLabel: "Filter by Mood",
+            filterRiskLabel: "Risk Level",
+            moodFilterAll: "All", moodFilterHappy: "Happy", moodFilterCalm: "Calm", moodFilterBored: "Bored", 
+            moodFilterStressed: "Stressed", moodFilterSad: "Sad", moodFilterAngry: "Angry", moodFilterAnxious: "Anxious", moodFilterHopeless: "Hopeless",
+            riskFilterAll: "All", riskFilterHigh: "High Risk (Red)", riskFilterNormal: "Normal",
+            th_date: "Date", th_name: "Name", th_class: "Class/ID", th_mood: "Mood", th_problem: "Main Problem", th_message: "Message",
+            moodChartTitle: "Mood Statistics Chart",
+            exportBtn: "Export Data to Excel/CSV",
+            placeholderName: "Enter Student Name",
+            placeholderClass: "Enter Class or ID",
+            noData: "No report data found.",
+            mood_happy: "Happy", mood_calm: "Calm", mood_bored: "Bored", mood_stressed: "Stressed", mood_sad: "Sad", mood_angry: "Angry", mood_anxious: "Anxious", mood_hopeless: "Hopeless",
+            problem_study: "Study Pressure", problem_family: "Family", problem_relationship: "Relationship", problem_physical: "Physical", problem_sleep: "Sleep Issues", problem_career: "Career", problem_other: "Other",
+            no_message: "N/A"
+        }
     };
-
-    function getChineseKey(value) {
-        if (!value) return value;
-        if (translations.zh.data_map[value]) return value;
-        const allKeys = Object.keys(translations.zh.data_map);
-        for (const key of allKeys) {
-            if (translations.en.data_map && translations.en.data_map[key] === value) return key; 
-            if (translations.ms.data_map && translations.ms.data_map[key] === value) return key; 
+    
+    // 辅助函数：将标准值转为对应的中文Key（用于在老师端统一显示中文）
+    function getChineseKey(standardValue) {
+        const prefix = standardValue.startsWith('mood') ? 'mood_' : standardValue.startsWith('problem') ? 'problem_' : '';
+        const key = prefix + standardValue;
+        
+        // 尝试从中文文本中查找
+        if (langText.zh.hasOwnProperty(key)) {
+            return langText.zh[key];
         }
-        return value; 
+        return standardValue; // 如果找不到，返回原始值
     }
-
-    function setLanguage(lang) {
-      localStorage.setItem("lang", lang);
-      const t = translations[lang];
-      const dataMap = t.data_map || translations.zh.data_map; 
-
-      document.getElementById("logoutBtnTop").innerText = t.logout;
-
-      document.getElementById("title").innerText = t.title;
-      document.getElementById("th-date").innerText = t.th_date;
-      document.getElementById("th-name").innerText = t.th_name;
-      document.getElementById("th-class").innerText = t.th_class; 
-      document.getElementById("th-mood").innerText = t.th_mood;
-      document.getElementById("th-problem").innerText = t.th_problem;
-      document.getElementById("th-message").innerText = t.th_message;
-
-      document.getElementById("label_filter_name").innerText = t.filter_name;
-      document.getElementById("filterName").placeholder = t.filter_name_placeholder;
-      document.getElementById("label_filter_class").innerText = t.filter_class;
-      document.getElementById("filterClass").placeholder = t.filter_class_placeholder;
-      document.getElementById("label_filter_mood").innerText = t.filter_mood;
-
-      document.getElementById("exportCsvBtn").innerText = t.btn_export_csv;
-      document.getElementById("printBtn").innerText = t.btn_print;
-
-      document.getElementById("dashboard_title").innerText = t.dashboard_title;
-      document.getElementById("stat_today_label").innerText = t.stat_today;
-      document.getElementById("stat_alerts_label").innerText = t.stat_alerts;
-      document.getElementById("stat_common_label").innerText = t.stat_common;
-
-      const moodSelect = document.getElementById("filterMood");
-      moodSelect.innerHTML = `<option value="">${t.filter_mood_all}</option>`; 
-      const moodKeys = ["😊 开心", "😐 普通", "😔 难过", "😡 生气", "😰 焦虑"];
-      moodKeys.forEach(key => {
-          const translatedText = dataMap[key] || key;
-          moodSelect.innerHTML += `<option value="${key}">${translatedText}</option>`;
-      });
-
-      renderDashboard(t, dataMap);
-      renderTable();
-    }
-
-    function renderDashboard(t, dataMap) {
-        const allData = JSON.parse(localStorage.getItem("moodReports") || "[]");
-        const todayStr = new Date().toLocaleDateString();
-        let totalToday = 0;
-        let problemCounts = {};
-        let alertMoods = 0;
-        const alertKeys = ["😔 难过", "😡 生气", "😰 焦虑"];
-
-        allData.forEach(r => {
-            if (r.date === todayStr) totalToday++;
-            const score = r.sentimentScore || 0;
-            const moodKey = getChineseKey(r.mood);
-            if (alertKeys.includes(moodKey) || score <= -2) {
-                alertMoods++;
-            }
-            const problemKey = getChineseKey(r.problem);
-            if (problemKey) problemCounts[problemKey] = (problemCounts[problemKey] || 0) + 1;
-        });
-
-        let mostCommonProblem = t.stat_none;
-        if (Object.keys(problemCounts).length > 0) {
-            const [key, count] = Object.entries(problemCounts).sort((a, b) => b[1] - a[1])[0];
-            const translatedProblem = dataMap[key] || key;
-            mostCommonProblem = `${translatedProblem} (${count}${t.suffix_times})`;
-        }
-
-        document.getElementById('stat_today_value').innerText = totalToday;
-        document.getElementById('stat_alerts_value').innerText = alertMoods;
-        document.getElementById('stat_common_value').innerText = mostCommonProblem;
-    }
-
-    function getFilteredData() {
-        const allData = JSON.parse(localStorage.getItem("moodReports") || "[]");
-        const nameFilter = document.getElementById("filterName").value.toLowerCase().trim();
-        const classFilter = document.getElementById("filterClass").value.toLowerCase().trim();
-        const moodFilter = document.getElementById("filterMood").value; 
-        allData.sort((a, b) => new Date(b.date) - new Date(a.date));
-        return allData.filter(r => {
-            const nameMatch = (r.name || "").toLowerCase().includes(nameFilter);
-            const classMatch = (r.class || "").toLowerCase().includes(classFilter);
-            const moodMatch = !moodFilter || r.mood === moodFilter;
-            return nameMatch && classMatch && moodMatch;
-        });
-    }
-
+    
+    // 渲染表格
     function renderTable() {
-      const lang = localStorage.getItem("lang") || "zh";
-      const t = translations[lang];
-      const dataMap = t.data_map;
-      const filteredData = getFilteredData();
-      const tbody = document.querySelector("#dataTable tbody");
-      
-      tbody.innerHTML = "";
-
-      if (filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan='6'>${t.no_data}</td></tr>`; 
-      } else {
-        filteredData.forEach(r => {
-          const chineseMoodKey = getChineseKey(r.mood); 
-          const chineseProblemKey = getChineseKey(r.problem); 
-          const translatedMood = dataMap[chineseMoodKey] || r.mood; 
-          const translatedProblem = dataMap[chineseProblemKey] || r.problem; 
-          const messageText = (r.message || "").trim();
-          const messageContent = messageText !== "" ? messageText : (dataMap["（无）"] || "（无）");
-
-          // AI 高亮逻辑 (保留)
-          const score = r.sentimentScore || 0;
-          let rowClass = "";
-          if (r.isCrisis || score <= -2) {
-              rowClass = "ai-risk-high"; 
-          }
-
-          // Google 翻译按钮 (保留)
-          let translateBtn = "";
-          if (messageText !== "") {
-              let targetLangCode = "en"; 
-              if (lang === "zh") targetLangCode = "zh-CN";
-              else if (lang === "ms") targetLangCode = "ms";
-              
-              const googleTranslateUrl = `https://translate.google.com/?sl=auto&tl=${targetLangCode}&text=${encodeURIComponent(messageText)}&op=translate`;
-              translateBtn = `
-                  <a href="${googleTranslateUrl}" target="_blank" title="Translate" style="text-decoration:none; margin-left: 8px; cursor:pointer; font-size: 1.2em;">
-                      🌐
-                  </a>
-              `;
-          }
-
-          const row = document.createElement("tr");
-          if(rowClass) row.className = rowClass;
-
-          row.innerHTML = `
-            <td>${r.date}</td>
-            <td>${r.name}</td>
-            <td>${r.class || 'N/A'}</td> 
-            <td>${translatedMood}</td>
-            <td>${translatedProblem}</td>
-            <td style="text-align: left; padding-left: 15px;">
-                ${messageContent} ${translateBtn}
-            </td>
-          `;
-          tbody.appendChild(row);
-        });
-      }
-    }
-
-    function exportToCsv() {
         const lang = localStorage.getItem("lang") || "zh";
-        const t = translations[lang];
-        const dataMap = t.data_map;
-        const filteredData = getFilteredData();
-        const headers = [ t.th_date, t.th_name, t.th_class, t.th_mood, t.th_problem, t.th_message ];
-        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
-        filteredData.forEach(r => {
-            const chineseMoodKey = getChineseKey(r.mood); const chineseProblemKey = getChineseKey(r.problem); 
-            const translatedMood = dataMap[chineseMoodKey] || r.mood; const translatedProblem = dataMap[chineseProblemKey] || r.problem; 
-            const messageContent = (r.message || "").trim() !== "" ? r.message : (dataMap["（无）"] || "（无）");
-            const safeMessage = messageContent.includes(",") ? `"${messageContent}"` : messageContent;
-            const row = [ r.date, r.name, (r.class || 'N/A'), translatedMood, translatedProblem, safeMessage ];
-            csvContent += row.join(",") + "\n";
+        const t = langText[lang];
+        const dataMap = langText[lang]; // 用于获取翻译文本
+
+        const filterName = document.getElementById("filterName").value.toLowerCase();
+        const filterClass = document.getElementById("filterClass").value.toLowerCase();
+        const filterMood = document.getElementById("filterMood").value;
+        const filterRisk = document.getElementById("filterRisk").value;
+        const allData = JSON.parse(localStorage.getItem("moodReports") || "[]").reverse(); // 倒序显示最新报告
+        const table = document.getElementById("reportsTable");
+        
+        // 过滤数据
+        const filteredData = allData.filter(record => {
+            const nameMatch = record.name.toLowerCase().includes(filterName);
+            const classMatch = (record.class || '').toLowerCase().includes(filterClass);
+            const moodMatch = filterMood === 'all' || record.mood === filterMood;
+            
+            let riskMatch = true;
+            if (filterRisk === 'high') {
+                riskMatch = record.isCrisis || (record.sentimentScore && record.sentimentScore <= -2);
+            } else if (filterRisk === 'normal') {
+                riskMatch = !(record.isCrisis || (record.sentimentScore && record.sentimentScore <= -2));
+            }
+
+            return nameMatch && classMatch && moodMatch && riskMatch;
         });
-        const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "student_mood_report.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+        if (filteredData.length === 0) {
+            table.innerHTML = `<caption>${t.noData}</caption>`;
+            renderChart([]); // 没有数据时清空图表
+            return;
+        }
+
+        // 构建表格 HTML
+        let tableHTML = `
+            <thead>
+                <tr>
+                    <th>${t.th_date}</th>
+                    <th>${t.th_name}</th>
+                    <th>${t.th_class}</th>
+                    <th>${t.th_mood}</th>
+                    <th>${t.th_problem}</th>
+                    <th>${t.th_message}</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        filteredData.forEach(record => {
+            // 将存储的标准值 (如 'happy', 'study') 转换成当前语言的显示文本
+            const translatedMood = dataMap['mood_' + record.mood] || record.mood;
+            const translatedProblem = dataMap['problem_' + record.problem] || record.problem;
+            const messageContent = (record.message || "").trim() !== "" ? record.message : dataMap['no_message'];
+            
+            // 风险判断 (isCrisis 或 sentimentScore <= -2)
+            const score = record.sentimentScore || 0;
+            const isHighRisk = record.isCrisis || score <= -2;
+            const rowClass = isHighRisk ? 'class="risk"' : '';
+
+            tableHTML += `
+                <tr ${rowClass}>
+                    <td>${record.date}</td>
+                    <td>${record.name}</td>
+                    <td>${record.class || dataMap['no_message']}</td>
+                    <td>${translatedMood}</td>
+                    <td>${translatedProblem}</td>
+                    <td>${messageContent}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `</tbody>`;
+        table.innerHTML = tableHTML;
+        
+        renderChart(filteredData);
+    }
+    
+    let moodChartInstance = null; // 用于存储 Chart 实例
+
+    // 渲染图表
+    function renderChart(data) {
+        const lang = localStorage.getItem("lang") || "zh";
+        const t = langText[lang];
+        const ctx = document.getElementById('moodChart').getContext('2d');
+
+        if (moodChartInstance) {
+            moodChartInstance.destroy(); // 销毁旧图表
+        }
+
+        const moodCounts = data.reduce((acc, record) => {
+            const moodDisplay = t['mood_' + record.mood] || record.mood;
+            acc[moodDisplay] = (acc[moodDisplay] || 0) + 1;
+            return acc;
+        }, {});
+        
+        const labels = Object.keys(moodCounts);
+        const counts = Object.values(moodCounts);
+
+        moodChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: t.moodChartTitle,
+                    data: counts,
+                    backgroundColor: [
+                        '#96e6a1', // happy
+                        '#a6c1ee', // calm
+                        '#cccccc', // bored
+                        '#ffcc99', // stressed
+                        '#a18cd1', // sad
+                        '#ff9999', // angry
+                        '#fbc2eb', // anxious
+                        '#e74c3c'  // hopeless
+                    ],
+                    borderColor: [
+                        '#3cb371', '#6495ed', '#999999', '#ffa500', 
+                        '#8a2be2', '#dc143c', '#ff69b4', '#c0392b'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: t.th_name + ' (' + t.th_mood + ')' // 人次
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: t.moodChartTitle
+                    }
+                }
+            }
+        });
     }
 
-    function printReport() {
-        const lang = localStorage.getItem("lang") || "zh"; const t = translations[lang]; const dataMap = t.data_map; const filteredData = getFilteredData();
-        let htmlContent = `<html><head><title>${t.report_title}</title><style>body{font-family:sans-serif}table{width:100%;border-collapse:collapse}th,td{border:1px solid #000;padding:8px;text-align:left}th{background-color:#f2f2f2}h1{text-align:center}.risk{background-color:#fceceb;color:red}</style></head><body><h1>${t.report_title} (${new Date().toLocaleDateString()})</h1><table><thead><tr><th>${t.th_date}</th><th>${t.th_name}</th><th>${t.th_class}</th><th>${t.th_mood}</th><th>${t.th_problem}</th><th>${t.th_message}</th></tr></thead><tbody>`;
-        filteredData.forEach(r => {
-            const chineseMoodKey = getChineseKey(r.mood); const chineseProblemKey = getChineseKey(r.problem); const translatedMood = dataMap[chineseMoodKey] || r.mood; const translatedProblem = dataMap[chineseProblemKey] || r.problem; const messageContent = (r.message || "").trim() !== "" ? r.message : (dataMap["（无）"] || "（无）");
-            const score = r.sentimentScore || 0;
-            const rowClass = (r.isCrisis || score <= -2) ? 'class="risk"' : '';
-            htmlContent += `<tr ${rowClass}><td>${r.date}</td><td>${r.name}</td><td>${r.class || 'N/A'}</td><td>${translatedMood}</td><td>${translatedProblem}</td><td>${messageContent}</td></tr>`;
+    // 导出数据
+    function exportData() {
+        const allData = JSON.parse(localStorage.getItem("moodReports") || "[]").reverse();
+        const lang = localStorage.getItem("lang") || "zh";
+        const t = langText[lang];
+        const dataMap = langText[lang];
+
+        const headers = [t.th_date, t.th_name, t.th_class, t.th_mood, t.th_problem, t.th_message, "情绪分数", "是否危机"];
+        let csv = headers.join(',') + '\n';
+
+        allData.forEach(record => {
+            const translatedMood = dataMap['mood_' + record.mood] || record.mood;
+            const translatedProblem = dataMap['problem_' + record.problem] || record.problem;
+            const messageContent = (record.message || "").replace(/"/g, '""'); // 处理双引号
+            
+            const row = [
+                record.date,
+                record.name,
+                record.class || '',
+                translatedMood,
+                translatedProblem,
+                `"${messageContent}"`, // 留言加双引号，防止逗号干扰
+                record.sentimentScore || 0,
+                record.isCrisis ? '是' : '否'
+            ];
+            csv += row.join(',') + '\n';
         });
-        htmlContent += `</tbody></table></body></html>`;
-        const printWindow = window.open('', '_blank'); printWindow.document.write(htmlContent); printWindow.document.close(); printWindow.focus(); printWindow.print();
+
+        const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'mood_reports_' + new Date().toLocaleDateString().replace(/\//g, '-') + '.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+    
+    // 语言切换和初始化
+    function setLanguage(lang) {
+        localStorage.setItem("lang", lang);
+        const t = langText[lang];
+
+        document.getElementById("langZh").classList.toggle("active", lang === "zh");
+        document.getElementById("langEn").classList.toggle("active", lang === "en");
+
+        document.getElementById("title").innerText = t.title;
+        document.getElementById("headerTitle").innerText = t.headerTitle;
+        document.getElementById("logoutBtnTop").innerText = t.logout;
+        
+        // 过滤器标签和选项
+        document.getElementById("filterNameLabel").innerText = t.filterNameLabel;
+        document.getElementById("filterClassLabel").innerText = t.filterClassLabel;
+        document.getElementById("filterMoodLabel").innerText = t.filterMoodLabel;
+        document.getElementById("filterRiskLabel").innerText = t.filterRiskLabel;
+        
+        document.getElementById("filterName").placeholder = t.placeholderName;
+        document.getElementById("filterClass").placeholder = t.placeholderClass;
+
+        document.getElementById("moodFilterAll").innerText = t.moodFilterAll;
+        document.getElementById("moodFilterHappy").innerText = t.moodFilterHappy;
+        document.getElementById("moodFilterCalm").innerText = t.moodFilterCalm;
+        document.getElementById("moodFilterBored").innerText = t.moodFilterBored;
+        document.getElementById("moodFilterStressed").innerText = t.moodFilterStressed;
+        document.getElementById("moodFilterSad").innerText = t.moodFilterSad;
+        document.getElementById("moodFilterAngry").innerText = t.moodFilterAngry;
+        document.getElementById("moodFilterAnxious").innerText = t.moodFilterAnxious;
+        document.getElementById("moodFilterHopeless").innerText = t.moodFilterHopeless;
+
+        document.getElementById("riskFilterAll").innerText = t.riskFilterAll;
+        document.getElementById("riskFilterHigh").innerText = t.riskFilterHigh;
+        document.getElementById("riskFilterNormal").innerText = t.riskFilterNormal;
+
+        document.getElementById("exportBtn").innerText = t.exportBtn;
+        document.getElementById("moodChartTitle").innerText = t.moodChartTitle;
+
+        renderTable(); // 重新渲染表格以应用新的语言
     }
 
+    // 事件监听器
     document.getElementById("filterName").addEventListener("input", renderTable);
     document.getElementById("filterClass").addEventListener("input", renderTable);
     document.getElementById("filterMood").addEventListener("change", renderTable);
+    document.getElementById("filterRisk").addEventListener("change", renderTable);
     
+    // 页面加载时初始化
     const savedLang = localStorage.getItem("lang") || "zh";
     setLanguage(savedLang);
-  </script>
+    
+</script>
+
 </body>
 </html>
