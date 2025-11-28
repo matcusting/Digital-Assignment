@@ -1,0 +1,540 @@
+<script>
+  // 检查是否登录
+  const currentUser = JSON.parse(localStorage.getItem("loggedInUser"));
+  if (!currentUser || currentUser.role !== "student") {
+    alert("请先登录学生账户！");
+    // *** 关键修改点 ***
+    // 登录页现在是 index.html
+    window.location.href = "index.html"; 
+  }
+</script>
+
+<button onclick="logout()" id="logoutBtnTop">登出</button>
+
+<script>
+  function logout() {
+    localStorage.removeItem("loggedInUser");
+    // *** 关键修改点 ***
+    // 登录页现在是 index.html
+    window.location.href = "index.html";
+  }
+</script>
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title id="title">心情回报系统 - 学生填写页</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      
+      /* 🌊 舒缓动态渐变背景 */
+      background: linear-gradient(-45deg, #a18cd1, #fbc2eb, #a6c1ee, #96e6a1);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 40px;
+      
+      /* ✨ 毛玻璃效果 */
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #a18cd1;
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus, select:focus, textarea:focus {
+        border-color: #a18cd1;
+        box-shadow: 0 0 5px rgba(161, 140, 209, 0.5);
+        outline: none;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: #fbc2eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    button:hover {
+      background: #a18cd1;
+      transform: translateY(-1px);
+    }
+
+    #logoutBtnTop {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: auto;
+        padding: 10px 20px;
+        background: #a6c1ee;
+        z-index: 100;
+    }
+
+    #logoutBtnTop:hover {
+        background: #96e6a1;
+    }
+
+    .lang-switcher {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+    }
+
+    .lang-switcher button {
+        width: auto;
+        padding: 8px 15px;
+        margin: 0 5px;
+        background-color: #eee;
+        color: #333;
+        font-size: 14px;
+        display: inline-block;
+    }
+
+    .lang-switcher button.active {
+        background-color: #a18cd1;
+        color: white;
+    }
+
+    /* 成功信息和危机弹窗样式 */
+    #successMessage {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #27ae60;
+        color: white;
+        padding: 20px 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        display: none;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .modal {
+        display: none; 
+        position: fixed; 
+        z-index: 2000; 
+        left: 0;
+        top: 0;
+        width: 100%; 
+        height: 100%; 
+        overflow: auto; 
+        background-color: rgba(0,0,0,0.6); 
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; 
+        padding: 40px;
+        border: 1px solid #888;
+        width: 80%; 
+        max-width: 500px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h2 {
+        color: #e74c3c;
+        margin-bottom: 20px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .modal-content p {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #333;
+        margin-bottom: 30px;
+    }
+
+    .modal-content button {
+        width: 50%;
+        background-color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+
+<div class="lang-switcher">
+    <button id="langZh" onclick="setLanguage('zh')">中文</button>
+    <button id="langEn" onclick="setLanguage('en')">English</button>
+</div>
+
+<div class="container">
+  <h1 id="headerTitle">心情回报系统 - 学生填写页</h1>
+  
+  <div id="successMessage" style="display: none;">
+      提交成功！
+  </div>
+
+  <form id="moodReportForm">
+    <div class="form-group">
+      <label for="name" id="nameLabel">姓名 (系统会自动填写)</label>
+      <input type="text" id="name" required readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="class" id="classLabel">班级/学号 (可选)</label>
+      <input type="text" id="class" placeholder="例如：高一(1)班 或 2024001">
+    </div>
+
+    <div class="form-group">
+      <label for="mood" id="moodLabel">您今天的心情如何？</label>
+      <select id="mood" required>
+        <option value="" disabled selected id="selectMoodPlaceholder">请选择</option>
+        <option value="happy" id="moodHappy">😊 快乐 / Happy</option>
+        <option value="calm" id="moodCalm">😌 平静 / Calm</option>
+        <option value="bored" id="moodBored">😐 无聊 / Bored</option>
+        <option value="stressed" id="moodStressed">😥 压力大 / Stressed</option>
+        <option value="sad" id="moodSad">😔 难过 / Sad</option>
+        <option value="angry" id="moodAngry">😡 生气 / Angry</option>
+        <option value="anxious" id="moodAnxious">😨 焦虑 / Anxious</option>
+        <option value="hopeless" id="moodHopeless">😩 绝望 / Hopeless</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="problem" id="problemLabel">您遇到的主要问题是什么？</label>
+      <select id="problem" required>
+        <option value="" disabled selected id="selectProblemPlaceholder">请选择</option>
+        <option value="study" id="problemStudy">📚 学习压力 / Study</option>
+        <option value="family" id="problemFamily">👨‍👩‍👧‍👦 家庭关系 / Family</option>
+        <option value="relationship" id="problemRelationship">👥 人际关系 / Relationship</option>
+        <option value="physical" id="problemPhysical">🤒 身体不适 / Physical</option>
+        <option value="sleep" id="problemSleep">😴 睡眠问题 / Sleep</option>
+        <option value="career" id="problemCareer">🧭 未来规划 / Career</option>
+        <option value="other" id="problemOther">❓ 其他 / Other</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="message" id="messageLabel">有什么想告诉心理老师的话吗？ (选填，但鼓励写下)</label>
+      <textarea id="message" placeholder="请在这里写下你的想法、感受或需要帮助的具体内容"></textarea>
+    </div>
+
+    <button type="submit" id="submitBtn">提交报告</button>
+  </form>
+</div>
+
+<div id="crisisModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle">🚨 紧急提醒：你可能需要立即帮助！</h2>
+        <p id="modalMessage">
+            根据你填写的内容，系统判断你可能处于**情绪危机**或**有伤害自己/他人的风险**。
+            <br><br>
+            **请不要独自面对！** 请立即联系你信任的人或以下紧急联系方式：
+            <br>
+            1. 学校心理老师电话：[填写学校电话]
+            <br>
+            2. 全国心理援助热线：400-886-0906 (24小时)
+            <br>
+            3. 报警电话：110
+        </p>
+        <button onclick="closeModal()" id="modalCloseBtn">我明白了，关闭</button>
+    </div>
+</div>
+
+<script>
+  // AI 情感分析模拟函数
+  function analyzeSentimentAI(text) {
+      if (!text) return { score: 0, isCrisis: false };
+      
+      let score = 0;
+      let isCrisis = false;
+      const negativeKeywords = ["死", "不想活", "伤害", "绝望", "痛苦", "结束", "抑郁", "割腕", "跳楼", "自杀"];
+      const crisisTriggers = ["死", "不想活", "伤害", "自杀", "割腕", "跳楼", "结束生命"];
+
+      // 1. 关键词评分
+      negativeKeywords.forEach(keyword => {
+          if (text.includes(keyword)) {
+              score -= 3;
+          }
+      });
+      
+      crisisTriggers.forEach(keyword => {
+          if (text.includes(keyword)) {
+              isCrisis = true; // 直接触发危机
+          }
+      });
+
+      // 2. 长度和语气（简单模拟）
+      if (text.length < 10) score += 1; // 消息太短可能不是真的问题
+      
+      // 3. 极度负面情绪选项加权
+      const selectedMood = document.getElementById("mood").value;
+      if (selectedMood === "hopeless" || selectedMood === "anxious") score -= 3;
+      if (selectedMood === "sad" || selectedMood === "angry" || selectedMood === "stressed") score -= 1;
+      
+      // 4. 危机分数判断
+      if (score <= -5) {
+          isCrisis = true;
+      }
+      
+      return { score, isCrisis };
+  }
+  
+  const langText = {
+      zh: {
+          title: "心情回报系统 - 学生填写页",
+          headerTitle: "心情回报系统 - 学生填写页",
+          nameLabel: "姓名 (系统会自动填写)",
+          classLabel: "班级/学号 (可选)",
+          moodLabel: "您今天的心情如何？",
+          problemLabel: "您遇到的主要问题是什么？",
+          messageLabel: "有什么想告诉心理老师的话吗？ (选填，但鼓励写下)",
+          submitBtn: "提交报告",
+          placeholderClass: "例如：高一(1)班 或 2024001",
+          placeholderMessage: "请在这里写下你的想法、感受或需要帮助的具体内容",
+          selectMoodPlaceholder: "请选择",
+          moodHappy: "😊 快乐", moodCalm: "😌 平静", moodBored: "😐 无聊", moodStressed: "😥 压力大", moodSad: "😔 难过", moodAngry: "😡 生气", moodAnxious: "😨 焦虑", moodHopeless: "😩 绝望",
+          selectProblemPlaceholder: "请选择",
+          problemStudy: "📚 学习压力", problemFamily: "👨‍👩‍👧‍👦 家庭关系", problemRelationship: "👥 人际关系", problemPhysical: "🤒 身体不适", problemSleep: "😴 睡眠问题", problemCareer: "🧭 未来规划", problemOther: "❓ 其他",
+          successMessage: "提交成功！",
+          modalTitle: "🚨 紧急提醒：你可能需要立即帮助！",
+          modalMessage: `根据你填写的内容，系统判断你可能处于**情绪危机**或**有伤害自己/他人的风险**。
+            <br><br>
+            **请不要独自面对！** 请立即联系你信任的人或以下紧急联系方式：
+            <br>
+            1. 学校心理老师电话：[填写学校电话]
+            <br>
+            2. 全国心理援助热线：400-886-0906 (24小时)
+            <br>
+            3. 报警电话：110`,
+          modalCloseBtn: "我明白了，关闭",
+          logout: "登出"
+      },
+      en: {
+          title: "Mood Report System - Student Form",
+          headerTitle: "Mood Report System - Student Form",
+          nameLabel: "Name (Auto-filled)",
+          classLabel: "Class/ID (Optional)",
+          moodLabel: "How are you feeling today?",
+          problemLabel: "What is the main problem you are facing?",
+          messageLabel: "Is there anything you want to tell the counselor? (Optional, but encouraged)",
+          submitBtn: "Submit Report",
+          placeholderClass: "e.g., Grade 10-1 or 2024001",
+          placeholderMessage: "Write down your thoughts, feelings, or specific needs for help here.",
+          selectMoodPlaceholder: "Select",
+          moodHappy: "😊 Happy", moodCalm: "😌 Calm", moodBored: "😐 Bored", moodStressed: "😥 Stressed", moodSad: "😔 Sad", moodAngry: "😡 Angry", moodAnxious: "😨 Anxious", moodHopeless: "😩 Hopeless",
+          selectProblemPlaceholder: "Select",
+          problemStudy: "📚 Study Pressure", problemFamily: "👨‍👩‍👧‍👦 Family", problemRelationship: "👥 Relationship", problemPhysical: "🤒 Physical", problemSleep: "😴 Sleep Issues", problemCareer: "🧭 Career", problemOther: "❓ Other",
+          successMessage: "Submitted Successfully!",
+          modalTitle: "🚨 EMERGENCY ALERT: You may need immediate help!",
+          modalMessage: `Based on your input, the system suggests you may be in an **emotional crisis** or **at risk of harming yourself/others**.
+            <br><br>
+            **Please do not face this alone!** Contact a trusted person or one of the following emergency contacts immediately:
+            <br>
+            1. School Counselor Phone: [Fill in School Phone]
+            <br>
+            2. National Crisis Hotline: 400-886-0906 (24/7)
+            <br>
+            3. Emergency Services: 110 (Police) / 999 (Emergency)`,
+          modalCloseBtn: "I Understand, Close",
+          logout: "Logout"
+      }
+  };
+  
+  // 辅助函数：根据值获取对应的中文Key
+  function getChineseKey(value) {
+      for (const key in langText.zh) {
+          if (langText.zh[key].toLowerCase().includes(value.toLowerCase())) {
+              return key;
+          }
+      }
+      return value;
+  }
+
+  // 辅助函数：标准化值 (用于存储)
+  function getStandardValue(value, type) {
+      if (!value) return '';
+      // 遍历中文和英文，找到对应的标准值（如 happy, study）
+      for (const key in langText.zh) {
+          if (type === 'mood' && key.startsWith('mood') && langText.zh[key].includes(value)) {
+              return key.substring(4).toLowerCase(); // 提取 happy/calm 等
+          }
+          if (type === 'problem' && key.startsWith('problem') && langText.zh[key].includes(value)) {
+              return key.substring(7).toLowerCase(); // 提取 study/family 等
+          }
+      }
+      return value; // 否则返回原始值
+  }
+
+  function setLanguage(lang) {
+    localStorage.setItem("lang", lang);
+    const t = langText[lang];
+
+    // 更新按钮状态
+    document.getElementById("langZh").classList.toggle("active", lang === "zh");
+    document.getElementById("langEn").classList.toggle("active", lang === "en");
+
+    document.getElementById("title").innerText = t.title;
+    document.getElementById("headerTitle").innerText = t.headerTitle;
+    document.getElementById("nameLabel").innerText = t.nameLabel;
+    document.getElementById("classLabel").innerText = t.classLabel;
+    document.getElementById("moodLabel").innerText = t.moodLabel;
+    document.getElementById("problemLabel").innerText = t.problemLabel;
+    document.getElementById("messageLabel").innerText = t.messageLabel;
+    document.getElementById("submitBtn").innerText = t.submitBtn;
+    document.getElementById("class").placeholder = t.placeholderClass;
+    document.getElementById("message").placeholder = t.placeholderMessage;
+    document.getElementById("logoutBtnTop").innerText = t.logout;
+    document.getElementById("successMessage").innerText = t.successMessage;
+    
+    // 更新选项
+    document.getElementById("selectMoodPlaceholder").innerText = t.selectMoodPlaceholder;
+    document.getElementById("moodHappy").innerText = t.moodHappy;
+    document.getElementById("moodCalm").innerText = t.moodCalm;
+    document.getElementById("moodBored").innerText = t.moodBored;
+    document.getElementById("moodStressed").innerText = t.moodStressed;
+    document.getElementById("moodSad").innerText = t.moodSad;
+    document.getElementById("moodAngry").innerText = t.moodAngry;
+    document.getElementById("moodAnxious").innerText = t.moodAnxious;
+    document.getElementById("moodHopeless").innerText = t.moodHopeless;
+    
+    document.getElementById("selectProblemPlaceholder").innerText = t.selectProblemPlaceholder;
+    document.getElementById("problemStudy").innerText = t.problemStudy;
+    document.getElementById("problemFamily").innerText = t.problemFamily;
+    document.getElementById("problemRelationship").innerText = t.problemRelationship;
+    document.getElementById("problemPhysical").innerText = t.problemPhysical;
+    document.getElementById("problemSleep").innerText = t.problemSleep;
+    document.getElementById("problemCareer").innerText = t.problemCareer;
+    document.getElementById("problemOther").innerText = t.problemOther;
+
+    // 更新弹窗
+    document.getElementById("modalTitle").innerHTML = t.modalTitle;
+    document.getElementById("modalMessage").innerHTML = t.modalMessage;
+    document.getElementById("modalCloseBtn").innerText = t.modalCloseBtn;
+  }
+  
+  const form = document.getElementById("moodReportForm");
+  
+  // 自动填充用户名
+  const nameInput = document.getElementById("name");
+  if (currentUser) {
+      nameInput.value = currentUser.username;
+  }
+  
+  form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const currentLang = localStorage.getItem("lang") || "zh";
+      const moodValue = document.getElementById("mood").value;
+      const problemValue = document.getElementById("problem").value;
+      const messageValue = document.getElementById("message").value;
+
+      // 情感分析
+      const analysis = analyzeSentimentAI(messageValue);
+
+      const record = {
+        name: document.getElementById("name").value,
+        class: document.getElementById("class").value.trim() || '未填写', 
+        mood: getStandardValue(moodValue, 'mood'),
+        problem: getStandardValue(problemValue, 'problem'),
+        message: messageValue,
+        date: new Date().toLocaleDateString(),
+        sentimentScore: analysis.score,
+        isCrisis: analysis.isCrisis
+      };
+
+      if (analysis.isCrisis) {
+          document.getElementById("crisisModal").style.display = "block";
+      } else {
+          document.getElementById("successMessage").style.display = "block";
+          setTimeout(() => { document.getElementById("successMessage").style.display = "none"; }, 3000);
+      }
+
+      let allData = JSON.parse(localStorage.getItem("moodReports") || "[]");
+      allData.push(record);
+      localStorage.setItem("moodReports", JSON.stringify(allData));
+
+      e.target.reset();
+      setLanguage(currentLang);
+    });
+
+    function closeModal() {
+        document.getElementById("crisisModal").style.display = "none";
+    }
+
+    const savedLang = localStorage.getItem("lang") || "zh";
+    setLanguage(savedLang);
+
+</script>
+
+</body>
+</html>
